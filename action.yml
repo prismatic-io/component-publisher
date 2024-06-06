@@ -149,7 +149,7 @@ runs:
 
         COMMAND="prism components:publish \
         --skip-on-signature-match \
-        --no-confirm \"
+        --no-confirm"
 
         if [ "${{ inputs.SKIP_COMMIT_HASH_PUBLISH }}" = "false" ]; then
           COMMAND="$COMMAND --commitHash=${{ steps.commit-details.outputs.COMMIT_HASH }}"
