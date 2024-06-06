@@ -1,0 +1,235 @@
+name: "Prismatic Component Publish"
+description: "Publish a component via Prism"
+
+inputs:
+  CUSTOMER_ID:
+    description: "The ID of the customer with which to associate the component."
+    required: false
+  COMMENT:
+    description: "Any comments to associate with the component."
+    required: false
+  PRISMATIC_URL:
+    description: "The target Prismatic API to import to."
+    required: true
+  PRISM_REFRESH_TOKEN:
+    description: "The token granting access to the API at the PRISMATIC_URL provided."
+    required: true
+  SKIP_COMMIT_HASH_PUBLISH:
+    description: "Skip inclusion of commit hash in metadata."
+    required: false
+    default: false
+  SKIP_COMMIT_URL_PUBLISH:
+    description: "Skip inclusion of commit url in metadata."
+    required: false
+    default: false
+  SKIP_REPO_URL_PUBLISH:
+    description: "Skip inclusion of repository url in metadata."
+    required: false
+    default: false
+  SKIP_PULL_REQUEST_URL_PUBLISH:
+    description: "Skip inclusion of pull request url in metadata."
+    required: false
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up logger and text colors
+      shell: bash
+      run: |
+        echo "ERROR=\033[31m" >> $GITHUB_ENV
+        echo "INFO=\033[1;4;34;38;2;96;120;226m" >> $GITHUB_ENV
+        echo "COLOR_RESET=\033[0m" >> $GITHUB_ENV
+        echo 'log() { local color=$1; local message=$2; echo -e ${color}${message}${COLOR_RESET}; }' > $GITHUB_WORKSPACE/logger.sh
+
+    - name: Get commit details from 'github' context
+      id: commit-details
+      shell: bash
+      run: |
+        source $GITHUB_WORKSPACE/logger.sh
+        log $INFO "Getting commit details from context..."
+        echo "COMMIT_HASH=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+        echo "COMMIT_URL=https://github.com/${{ github.repository }}/commit/${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+    - name: Get PR details from Github CLI
+      id: pr-details
+      shell: bash
+      run: |
+        source $GITHUB_WORKSPACE/logger.sh
+        log $INFO "Getting PR details from Github CLI..."
+        PR_DETAILS=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/pulls --jq '.[0]')
+        if [[ -z "$PR_DETAILS" ]]; then
+          log $INFO "No PRs associated with this commit."
+          echo "PR_NUMBER=" >> $GITHUB_OUTPUT
+          echo "PR_URL=" >> $GITHUB_OUTPUT
+        else
+          PR_NUMBER=$(echo $PR_DETAILS | jq -r '.number')
+          PR_URL=$(echo $PR_DETAILS | jq -r '.html_url')
+          echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          echo "PR_URL=${PR_URL}" >> $GITHUB_OUTPUT
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Print source control details
+      shell: bash
+      run: |
+        source $GITHUB_WORKSPACE/logger.sh
+        log $INFO "The commit hash is ${{ steps.commit-details.outputs.COMMIT_HASH }}"
+        log $INFO "The commit url is ${{ steps.commit-details.outputs.COMMIT_URL }}"
+        if [ -n "${{ steps.pr-details.outputs.PR_URL }}" ]; then
+          log $INFO "The PR url is ${{ steps.pr-details.outputs.PR_URL }}"
+        fi
+
+    # Node may be installed in the parent workflow. This ensures the version is what Prism expects.
+    # This action will use a cached version if available.
+    - name: Set up Node using Github Action
+      uses: actions/setup-node@v4
+      with:
+        node-version: "18.19.1"
+
+    # Check for existence of required environment variables.
+    - name: Check if PRISMATIC_URL is set
+      shell: bash
+      run: |
+        source $GITHUB_WORKSPACE/logger.sh
+        if [ -z "${{ inputs.PRISMATIC_URL }}" ]; then
+          log $ERROR "PRISMATIC_URL is not set"
+          exit 1
+        else
+          log $INFO "PRISMATIC_URL: ${{ inputs.PRISMATIC_URL }}"
+        fi
+
+    - name: Check if PRISM_REFRESH_TOKEN is set
+      shell: bash
+      run: |
+        source $GITHUB_WORKSPACE/logger.sh
+        if [ -z "${{ inputs.PRISM_REFRESH_TOKEN }}" ]; then
+          log $ERROR "PRISM_REFRESH_TOKEN is not set"
+          exit 1
+        fi
+
+    - name: Print logo to console once
+      if: ${{ !env.LOGO_SHOWN }}
+      shell: bash
+      run: |
+        echo -e "
+        \n
+        \033[38;2;12;193;144m            .+.             \033[38;2;73;74;167m                         .#-                                                   -#-            
+        \033[38;2;8;199;150m        .#\033[38;2;12;193;144m.##\033[38;2;10;195;152m+\033[38;2;10;195;152m#+           \033[38;2;73;74;167m                          -#+                                            ##.    -#+            
+        \033[38;2;14;190;146m         ###\033[38;2;28;168;164m#.\033[38;2;30;163;167m+\033[38;2;18;185;154m#+          \033[38;2;73;74;167m    ... .-+-.     ....-+- ...    .-+-.   ....-++.  .-+-.      .---..  ...##.... ...    .-++-.  
+        \033[38;2;16;187;148m         ##\033[38;2;28;168;164m+\033[38;2;32;161;166m+  \033[38;2;35;155;171m###         \033[38;2;73;74;167m    -#####++###.  +#####+ .##  +##++###  .####+######+###.  +###+###+ .#######. -#+  .###++###-
+        \033[38;2;17;185;150m        #- \033[38;2;32;161;166m+#+  \033[38;2;30;169;158m-\033[38;2;35;155;171m##         \033[38;2;73;74;167m   -##.     .##. +#+     .##  ##+.      .##.   +##.   .##.  .   ..##.   ##.    -#+ .##.    .. 
+        \033[38;2;19;182;152m      .##-\033[38;2;31;162;168m .###.\033[38;2;40;148;173m \033[38;2;40;148;174m-##.       \033[38;2;73;74;167m   -#+       ##- +#-     .##   -#####-  .##    -##    .##. -#####+##.   ##.    -#+ +##        
+        \033[38;2;20;180;154m     .##. \033[38;2;31;162;167m.##+\033[38;2;37;153;172m##. \033[38;2;46;140;175m.##.      \033[38;2;73;74;167m   -##-     .##. +#-     .##   .    ##+ .##    -##    .##. ##.   .##.   ##.    -#+ .##.    .. 
+        \033[38;2;22;177;156m    .##.\033[38;2;33;158;169m .##. \033[38;2;47;140;175m.##-\033[38;2;55;131;174m .##-     \033[38;2;73;74;167m   -#####+####.  +#-     .##  ########. .##    -##    .##. ####+####.   ###+#. -#+  .###++###-
+        \033[38;2;24;174;158m   -##.\033[38;2;36;155;171m  ###\033[38;2;44;143;175m###\033[38;2;49;137;174m###  \033[38;2;62;122;174m.#\033[38;2;62;122;174m#+     \033[38;2;73;74;167m  -## .-+-.     ...     ...    ..-.    ...    ...    ...   ..--. ...    .--.  ...     .-+-.  
+        \033[38;2;25;172;159m  +##                 \033[38;2;66;118;173m#\033[38;2;69;115;173m##    \033[38;2;73;74;167m  -##                                                                                        
+        \033[38;2;26;170;160m .+\033[38;2;31;164;161m#\033[38;2;34;161;162m#\033[38;2;37;158;163m#\033[38;2;38;156;163m#\033[38;2;39;154;163m#\033[38;2;41;151;164m#\033[38;2;42;149;164m#\033[38;2;45;146;165m#\033[38;2;46;144;165m#\033[38;2;48;142;166m#\033[38;2;49;141;166m#\033[38;2;50;140;166m#\033[38;2;52;138;167m#\033[38;2;53;136;167m#\033[38;2;56;132;168m#\033[38;2;57;130;168m#\033[38;2;60;126;169m#\033[38;2;61;124;169m#\033[38;2;65;119;173m#\033[38;2;71;112;173m#\033[38;2;71;112;173m#\033[38;2;64;120;170m#.  \033[38;2;73;74;167m   -#.  
+        \n
+        "
+        echo "LOGO_SHOWN=true" >> "$GITHUB_ENV"
+
+    - name: Install Prism
+      shell: bash
+      run: |
+        source $GITHUB_WORKSPACE/logger.sh
+        if ! npm list -g @prismatic-io/prism &> /dev/null; then
+          log $INFO "\U1F527 Prism CLI is not installed. Installing..."
+          npm install --global @prismatic-io/prism
+        else
+          log $INFO "Prism CLI is already installed."
+        fi
+
+    - name: Publish Component
+      id: prism-publish
+      shell: bash
+      run: |
+        source $GITHUB_WORKSPACE/logger.sh
+
+        COMMAND="prism components:publish \
+        --skip-on-signature-match \
+        --no-confirm \"
+
+        if [ "${{ inputs.SKIP_COMMIT_HASH_PUBLISH }}" = "false" ]; then
+          COMMAND="$COMMAND --commitHash=${{ steps.commit-details.outputs.COMMIT_HASH }}"
+        fi
+
+        if [ "${{ inputs.SKIP_COMMIT_URL_PUBLISH }}" = "false" ]; then
+          COMMAND="$COMMAND --commitUrl=${{ steps.commit-details.outputs.COMMIT_URL }}"
+        fi
+
+        if [ "${{ inputs.SKIP_REPO_URL_PUBLISH }}" = "false" ]; then
+          COMMAND="$COMMAND --repoUrl=${{ github.repository }}"
+        fi
+
+        if [ "${{ inputs.SKIP_PULL_REQUEST_URL_PUBLISH }}" = "false" ]; then
+          COMMAND="$COMMAND --pullRequestUrl=${{ steps.pr-details.outputs.PR_URL }}"
+        fi
+
+        if [ -n "${{ inputs.COMMENT }}" ]; then
+          COMMAND="$COMMAND --comment=${{ inputs.COMMENT }}"
+        fi
+
+        if [ -n "${{ inputs.CUSTOMER_ID }}" ]; then
+          COMMAND="$COMMAND --customer=${{ inputs.CUSTOMER_ID }}"
+        fi
+
+        log $INFO "Running command: $COMMAND"
+        OUTPUT=$($COMMAND 2>&1)
+
+        if echo "$OUTPUT" | grep -q "Package signatures match, skipping publish"; then
+          echo "PUBLISH_SKIPPED=true" >> $GITHUB_OUTPUT
+        else
+          echo "PUBLISH_SKIPPED=false" >> $GITHUB_OUTPUT
+        fi
+      env:
+        PRISMATIC_URL: ${{ inputs.PRISMATIC_URL }}
+        PRISM_REFRESH_TOKEN: ${{ inputs.PRISM_REFRESH_TOKEN }}
+
+    - name: Provide summary of action
+      shell: bash
+      run: |
+        if [ "${{ steps.prism-publish.outputs.PUBLISH_SKIPPED }}" = "true" ]; then
+          {
+            echo "### Component Not Published 🚫"
+            echo "#### A component with this signature is already published."
+          } >> "$GITHUB_STEP_SUMMARY"
+        else 
+          {
+            echo "### Component Published :rocket:"
+            echo "|![Prismatic Logo](https://app.prismatic.io/logo_fullcolor_white.svg)| Publish Info |"
+            echo "| --------------------- | --------------- |"
+            echo "| Component ID          | ${{ inputs.COMPONENT_ID }}"
+            echo "| Target Stack          | ${{ inputs.PRISMATIC_URL }} |"
+            echo "| Commit Link           | ${{ steps.commit-details.outputs.COMMIT_URL }} |"
+
+            if [ -n "${{ steps.pr-details.outputs.PR_URL }}" ]; then
+              echo "| PR Link               | ${{ steps.pr-details.outputs.PR_URL }} |"
+            fi
+
+            if [ "${{ inputs.SKIP_COMMIT_HASH_PUBLISH }}" = "false" ]; then
+              echo "| Commit Hash Published | ✅ |"
+            else 
+              echo "| Commit Hash Published | ❌ |"
+            fi
+
+            if [ "${{ inputs.SKIP_COMMIT_URL_PUBLISH }}" = "false" ]; then
+              echo "| Commit Link Published | ✅ |"
+            else 
+              echo "| Commit Link Published | ❌ |"
+            fi
+
+            if [ "${{ inputs.SKIP_REPO_URL_PUBLISH }}" = "false" ]; then
+              echo "| Repository Link Published | ✅ |"
+            else 
+              echo "| Repository Link Published | ❌ |"
+            fi
+
+            if [ "${{ inputs.SKIP_PULL_REQUEST_URL_PUBLISH }}" = "false" ]; then
+              echo "| PR Link Published | ✅ |"
+            else 
+              echo "| PR Link Published | ❌ |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
