@@ -26,6 +26,19 @@ To use this action in your workflow, add the following step configuration to you
 ```
 Optional inputs can be passed via the `with` block as desired. 
 
+### Additional Workflow Steps
+
+The following steps are an example of preparing the component bundle prior to publishing via this action. 
+```yaml
+  - uses: actions/checkout@v4
+
+  - name: Install dependencies
+    run: npm install
+
+  - name: Build component bundle
+    run: npm run build
+```
+
 ## Acquiring PRISM_REFRESH_TOKEN
 
 To acquire a refresh token that will authenticate against the Prism CLI, run this command in a terminal (assuming you are authenticated with the CLI):
