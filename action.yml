@@ -1,5 +1,5 @@
-name: "Prismatic Component Publish"
-description: "Publish a component via Prism"
+name: "Prismatic Component Publisher"
+description: "Publish a component via Prismatic's Prism CLI"
 
 inputs:
   CUSTOMER_ID:
