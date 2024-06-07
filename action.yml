@@ -9,7 +9,7 @@ inputs:
     description: "Any comments to associate with the component."
     required: false
   PRISMATIC_URL:
-    description: "The target Prismatic API to import to."
+    description: "The target Prismatic API to publish to."
     required: true
   PRISM_REFRESH_TOKEN:
     description: "The token granting access to the API at the PRISMATIC_URL provided."
