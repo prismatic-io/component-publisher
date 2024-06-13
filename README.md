@@ -19,7 +19,7 @@ To use this action in your workflow, add the following step configuration to you
 
 ```yaml
   - name: <STEP NAME>
-    uses: prismatic-io/component-publisher@v1
+    uses: prismatic-io/component-publisher@v1.0
     with:
       PRISMATIC_URL: ${{ vars.PRISMATIC_URL }}
       PRISM_REFRESH_TOKEN: ${{ secrets.PRISM_REFRESH_TOKEN }}
