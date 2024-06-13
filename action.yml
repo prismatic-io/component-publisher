@@ -1,5 +1,8 @@
 name: "Prismatic Component Publisher"
 description: "Publish a component via Prismatic's Prism CLI"
+branding:
+  icon: "upload-cloud"
+  color: "blue"
 
 inputs:
   CUSTOMER_ID:
