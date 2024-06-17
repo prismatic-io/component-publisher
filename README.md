@@ -4,9 +4,10 @@ This GitHub Action publishes a component via Prismatic's Prism CLI.
 
 ## Inputs
 
+- **COMPONENT_PATH** (optional): The path to the component's index.ts/js file. If not provided, the root will be used.
+- **CUSTOMER_ID** (optional): The ID of the customer with which to associate the component.
 - **PRISMATIC_URL** (required): The target Prismatic API to publish to.
 - **PRISM_REFRESH_TOKEN** (required): The token granting access to the API at the PRISMATIC_URL provided.
-- **CUSTOMER_ID** (optional): The ID of the customer with which to associate the component.
 - **COMMENT** (optional): Any comments to associate with the component.
 - **SKIP_COMMIT_HASH_PUBLISH** (optional): Skip inclusion of commit hash in metadata. Default is `false`.
 - **SKIP_COMMIT_URL_PUBLISH** (optional): Skip inclusion of commit URL in metadata. Default is `false`.
@@ -21,6 +22,7 @@ To use this action in your workflow, add the following step configuration to you
   - name: <STEP NAME>
     uses: prismatic-io/component-publisher@v1.0
     with:
+      COMPONENT_PATH: src/my-component
       PRISMATIC_URL: ${{ vars.PRISMATIC_URL }}
       PRISM_REFRESH_TOKEN: ${{ secrets.PRISM_REFRESH_TOKEN }}
 ```
