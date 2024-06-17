@@ -36,9 +36,11 @@ The following steps are an example of preparing the component bundle prior to pu
 
   - name: Install dependencies
     run: npm install
+    working-directory: src/my-component
 
   - name: Build component bundle
     run: npm run build
+    working-directory: src/my-component
 ```
 
 ## Acquiring PRISM_REFRESH_TOKEN
