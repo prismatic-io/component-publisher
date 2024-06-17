@@ -213,7 +213,6 @@ runs:
             echo "| Source Directory      | ${{ inputs.COMPONENT_PATH }} |"
             echo "| Target Stack          | ${{ inputs.PRISMATIC_URL }} |"
             echo "| Commit Link           | ${{ steps.commit-details.outputs.COMMIT_URL }} |"
-            echo "| "
 
             if [ -n "${{ steps.pr-details.outputs.PR_URL }}" ]; then
               echo "| PR Link               | ${{ steps.pr-details.outputs.PR_URL }} |"
