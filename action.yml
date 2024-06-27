@@ -178,7 +178,7 @@ runs:
         fi
 
         if [ -n "${{ inputs.COMMENT }}" ]; then
-          COMMAND="$COMMAND --comment=${{ inputs.COMMENT }}"
+          COMMAND="$COMMAND --comment=\"${{ inputs.COMMENT }}\""
         fi
 
         if [ -n "${{ inputs.CUSTOMER_ID }}" ]; then
