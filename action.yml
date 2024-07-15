@@ -140,6 +140,7 @@ runs:
       shell: bash
       run: |
         source $GITHUB_WORKSPACE/logger.sh
+
         if ! npm list -g @prismatic-io/prism &> /dev/null; then
           log $INFO "\U1F527 Prism CLI is not installed. Installing..."
           npm install --global @prismatic-io/prism
@@ -152,7 +153,7 @@ runs:
       shell: bash
       run: |
         source $GITHUB_WORKSPACE/logger.sh
-        set -x
+
         if [ -n "${{ inputs.COMPONENT_PATH }}" ]; then
           cd ${{ inputs.COMPONENT_PATH }}
         fi
