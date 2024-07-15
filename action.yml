@@ -152,7 +152,7 @@ runs:
       shell: bash
       run: |
         source $GITHUB_WORKSPACE/logger.sh
-
+        set -x
         if [ -n "${{ inputs.COMPONENT_PATH }}" ]; then
           cd ${{ inputs.COMPONENT_PATH }}
         fi
@@ -186,7 +186,7 @@ runs:
         fi
 
         log $INFO "Running command: $COMMAND"
-        OUTPUT=$($COMMAND 2>&1)
+        OUTPUT=$(eval "$COMMAND" 2>&1)
 
         if echo "$OUTPUT" | grep -q "Package signatures match, skipping publish"; then
           echo "PUBLISH_SKIPPED=true" >> $GITHUB_OUTPUT
