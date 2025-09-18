@@ -150,7 +150,7 @@ runs:
 
     - name: Publish Component
       id: prism-publish
-      shell: bash
+      shell: bash {0}
       run: |
         source $GITHUB_WORKSPACE/logger.sh
 
@@ -188,6 +188,13 @@ runs:
 
         log $INFO "Running command: $COMMAND"
         OUTPUT=$(eval "$COMMAND" 2>&1)
+        if [ $? -ne 0 ]; then
+          log $ERROR "Prism publish command failed:"
+          echo "$OUTPUT"
+          exit 1
+        fi
+
+        echo "$OUTPUT"
 
         if echo "$OUTPUT" | grep -q "Package signatures match, skipping publish"; then
           echo "PUBLISH_SKIPPED=true" >> $GITHUB_OUTPUT
