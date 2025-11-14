@@ -8,6 +8,7 @@ This GitHub Action publishes a component via Prismatic's Prism CLI.
 - **CUSTOMER_ID** (optional): The ID of the customer with which to associate the component.
 - **PRISMATIC_URL** (required): The target Prismatic API to publish to.
 - **PRISM_REFRESH_TOKEN** (required): The token granting access to the API at the PRISMATIC_URL provided.
+- **PRISMATIC_TENANT_ID** (optional): The tenant ID to use when publishing the integration. Required if your user is associated with multiple tenants in a single region. Use `prism me` to find your tenant ID.
 - **COMMENT** (optional): Any comments to associate with the component.
 - **SKIP_COMMIT_HASH_PUBLISH** (optional): Skip inclusion of commit hash in metadata. Default is `false`.
 - **SKIP_COMMIT_URL_PUBLISH** (optional): Skip inclusion of commit URL in metadata. Default is `false`.
@@ -25,6 +26,7 @@ To use this action in your workflow, add the following step configuration to you
     COMPONENT_PATH: src/my-component
     PRISMATIC_URL: ${{ vars.PRISMATIC_URL }}
     PRISM_REFRESH_TOKEN: ${{ secrets.PRISM_REFRESH_TOKEN }}
+    PRISMATIC_TENANT_ID: ${{ vars.PRISMATIC_TENANT_ID }}
 ```
 
 Optional inputs can be passed via the `with` block as desired.
@@ -45,7 +47,7 @@ The following steps are an example of preparing the component bundle prior to pu
   working-directory: src/my-component
 ```
 
-## Acquiring PRISM_REFRESH_TOKEN
+## Acquiring PRISM_REFRESH_TOKEN and PRISMATIC_TENANT_ID
 
 To acquire a refresh token that will authenticate against the Prism CLI, run this command in a terminal (assuming you are authenticated with the CLI):
 
@@ -53,7 +55,9 @@ To acquire a refresh token that will authenticate against the Prism CLI, run thi
 prism me:token --type=refresh
 ```
 
-This will produce a token valid for the Prismatic stack that your CLI is currently configured to. To check which API Prism is currently configured for, run:
+This will produce a token valid for the Prismatic stack that your CLI is currently configured to.
+
+To check which API Prism is currently configured for, and to fetch your tenant ID, run:
 
 ```
 prism me

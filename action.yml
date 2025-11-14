@@ -20,6 +20,9 @@ inputs:
   PRISM_REFRESH_TOKEN:
     description: "The token granting access to the API at the PRISMATIC_URL provided."
     required: true
+  PRISMATIC_TENANT_ID:
+    description: "The tenant ID to use when publishing the integration. Required if your user is associated with multiple tenants in a single region. Use 'prism me' to find your tenant ID."
+    required: false
   SKIP_COMMIT_HASH_PUBLISH:
     description: "Skip inclusion of commit hash in metadata."
     required: false
@@ -204,6 +207,7 @@ runs:
       env:
         PRISMATIC_URL: ${{ inputs.PRISMATIC_URL }}
         PRISM_REFRESH_TOKEN: ${{ inputs.PRISM_REFRESH_TOKEN }}
+        PRISMATIC_TENANT_ID: ${{ inputs.PRISMATIC_TENANT_ID }}
 
     - name: Provide summary of action
       shell: bash
@@ -224,6 +228,11 @@ runs:
             fi
             
             echo "| Target Stack          | ${{ inputs.PRISMATIC_URL }} |"
+
+            if [ -n "${{ inputs.PRISMATIC_TENANT_ID }}" ]; then
+              echo "| Tenant ID             | ${{ inputs.PRISMATIC_TENANT_ID }} |"
+            fi
+
             echo "| Commit Link           | ${{ steps.commit-details.outputs.COMMIT_URL }} |"
 
             if [ -n "${{ steps.pr-details.outputs.PR_URL }}" ]; then
