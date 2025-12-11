@@ -143,7 +143,7 @@ runs:
 
         if ! npm list -g @prismatic-io/prism &> /dev/null; then
           log $INFO "\U1F527 Prism CLI is not installed. Installing..."
-          npm install --global @prismatic-io/prism
+          npm install --global @prismatic-io/prism@^8.2.0
         else
           log $INFO "Prism CLI is already installed."
         fi
