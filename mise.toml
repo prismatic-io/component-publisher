@@ -1,0 +1,24 @@
+[tools]
+bats = "1.13.0"
+shellcheck = "0.11.0"
+actionlint = "1.7.7"
+
+[tasks.lint-shell]
+description = "Static-check shell scripts with shellcheck"
+run = "shellcheck scripts/*.sh tests/*.sh tests/stubs/*"
+
+[tasks.lint-actions]
+description = "Static-check workflow files with actionlint"
+run = "actionlint"
+
+[tasks.lint]
+description = "Run all linters"
+depends = ["lint-shell", "lint-actions"]
+
+[tasks.bats]
+description = "Run bats unit tests"
+run = "bats tests/"
+
+[tasks.test]
+description = "Run all checks (lint + bats)"
+depends = ["lint", "bats"]

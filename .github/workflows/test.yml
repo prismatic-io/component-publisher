@@ -1,0 +1,79 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
+      - name: Run lint + bats
+        run: mise run test
+
+  action-smoke:
+    # End-to-end exercise of the composite action against a stubbed `prism`.
+    # Catches wiring bugs in action.yml (env passthrough, action_path,
+    # input names, step output handoff) that the bats tests don't see
+    # because they hit the scripts directly.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install stub prism on PATH
+        run: tests/install-stubs.sh
+      - name: Run the composite action
+        id: action
+        uses: ./
+        with:
+          PRISMATIC_URL: https://example.invalid
+          PRISM_REFRESH_TOKEN: fake-refresh-token
+          CUSTOMER_ID: cust_smoke
+          COMMENT: smoke comment
+      - name: Assert prism received the expected argv
+        run: tests/assert-prism-calls.sh
+      - name: Assert PUBLISH_SKIPPED output is "false"
+        env:
+          PUBLISH_SKIPPED: ${{ steps.action.outputs.PUBLISH_SKIPPED }}
+        run: |
+          if [[ "$PUBLISH_SKIPPED" != "false" ]]; then
+            echo "::error::expected PUBLISH_SKIPPED=false, got '$PUBLISH_SKIPPED'"
+            exit 1
+          fi
+
+  action-smoke-skip:
+    # Variant: prism returns the signature-match skip message. Verifies that
+    # publish.sh sets PUBLISH_SKIPPED=true and the action surfaces it.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install stub prism on PATH
+        run: tests/install-stubs.sh
+      - name: Run the composite action
+        id: action
+        uses: ./
+        env:
+          PRISM_STUB_PUBLISH_STDOUT: "Package signatures match, skipping publish"
+        with:
+          PRISMATIC_URL: https://example.invalid
+          PRISM_REFRESH_TOKEN: fake-refresh-token
+      - name: Assert PUBLISH_SKIPPED output is "true"
+        env:
+          PUBLISH_SKIPPED: ${{ steps.action.outputs.PUBLISH_SKIPPED }}
+        run: |
+          if [[ "$PUBLISH_SKIPPED" != "true" ]]; then
+            echo "::error::expected PUBLISH_SKIPPED=true, got '$PUBLISH_SKIPPED'"
+            exit 1
+          fi
