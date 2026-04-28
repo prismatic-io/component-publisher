@@ -2,6 +2,8 @@
 bats = "1.13.0"
 shellcheck = "0.11.0"
 actionlint = "1.7.7"
+semver = "3.4.0"
+"github-cli" = "2.85.0"
 
 [tasks.lint-shell]
 description = "Static-check shell scripts with shellcheck"
@@ -22,3 +24,16 @@ run = "bats tests/"
 [tasks.test]
 description = "Run all checks (lint + bats)"
 depends = ["lint", "bats"]
+
+[tasks.release]
+description = "Trigger a release workflow run (usage: mise run release -- minor|major)"
+run = """
+BUMP="{{arg(i=0, name='bump', required=true)}}"
+if [ "$BUMP" != "minor" ] && [ "$BUMP" != "major" ]; then
+  echo "ERROR: Invalid bump type '$BUMP'. Must be minor or major."
+  exit 1
+fi
+gh workflow run release.yml -f bump="$BUMP"
+echo "Release workflow triggered with bump=$BUMP"
+echo "Watch: gh run watch"
+"""
