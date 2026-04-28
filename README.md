@@ -14,6 +14,7 @@ This GitHub Action publishes a component via Prismatic's Prism CLI.
 - **SKIP_COMMIT_URL_PUBLISH** (optional): Skip inclusion of commit URL in metadata. Default is `false`.
 - **SKIP_REPO_URL_PUBLISH** (optional): Skip inclusion of repository URL in metadata. Default is `false`.
 - **SKIP_PULL_REQUEST_URL_PUBLISH** (optional): Skip inclusion of pull request URL in metadata. Default is `false`.
+- **PRISM_VERSION** (optional): The version of the Prism CLI to install. Defaults to `^9`.
 
 ## Example Usage
 
@@ -21,7 +22,7 @@ To use this action in your workflow, add the following step configuration to you
 
 ```yaml
 - name: <STEP NAME>
-  uses: prismatic-io/component-publisher@v1.0
+  uses: prismatic-io/component-publisher@<LATEST_VERSION>
   with:
     COMPONENT_PATH: src/my-component
     PRISMATIC_URL: ${{ vars.PRISMATIC_URL }}
@@ -36,7 +37,7 @@ Optional inputs can be passed via the `with` block as desired.
 The following steps are an example of preparing the component bundle prior to publishing via this action.
 
 ```yaml
-- uses: actions/checkout@v4
+- uses: actions/checkout@v5
 
 - name: Install dependencies
   run: npm install

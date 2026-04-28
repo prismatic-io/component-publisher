@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Stub `prism` for action-smoke CI: captures argv to RUNNER_TEMP/prism-calls/.
+#
+# Behavior overrides for smoke job variants:
+#   PRISM_STUB_PUBLISH_STDOUT      stdout for components:publish (default success)
+#   PRISM_STUB_PUBLISH_EXIT        exit code for components:publish (default 0)
+
+out="$RUNNER_TEMP/prism-calls/$(date +%s%N)-$$"
+{ printf '%s\0' "$@"; } > "$out"
+
+echo "${PRISM_STUB_PUBLISH_STDOUT:-Component published successfully.}"
+exit "${PRISM_STUB_PUBLISH_EXIT:-0}"
