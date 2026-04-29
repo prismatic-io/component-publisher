@@ -26,11 +26,11 @@ description = "Run all checks (lint + bats)"
 depends = ["lint", "bats"]
 
 [tasks.release]
-description = "Trigger a release workflow run (usage: mise run release -- minor|major)"
+description = "Trigger a release workflow run (usage: mise run release -- patch|minor|major)"
 run = """
 BUMP="{{arg(i=0, name='bump', required=true)}}"
-if [ "$BUMP" != "minor" ] && [ "$BUMP" != "major" ]; then
-  echo "ERROR: Invalid bump type '$BUMP'. Must be minor or major."
+if [ "$BUMP" != "patch" ] && [ "$BUMP" != "minor" ] && [ "$BUMP" != "major" ]; then
+  echo "ERROR: Invalid bump type '$BUMP'. Must be patch, minor, or major."
   exit 1
 fi
 gh workflow run release.yml -f bump="$BUMP"

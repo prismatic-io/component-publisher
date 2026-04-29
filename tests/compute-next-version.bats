@@ -2,11 +2,9 @@
 #
 # Tests for scripts/compute-next-version.sh.
 #
-# These tests exist to document the 2-part → 3-part version migration:
-# the script must read existing legacy tags (v2.0) and produce 3-part
-# successors (v2.1.0). Once all reachable tags are 3-part, this script
-# becomes a thin wrapper over `semver bump` and these tests can be
-# retired.
+# Tests cover the script's own logic — tag filtering, version-sorted
+# selection, and BUMP validation — not the underlying `semver bump`
+# arithmetic.
 
 setup() {
   PROJECT_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -23,23 +21,28 @@ teardown() {
   rm -rf "$WORKDIR"
 }
 
-@test "minor bump from 2-part legacy v2.0 produces v2.1.0" {
-  for t in v1.0 v1.1 v2.0; do git tag "$t"; done
-  run env BUMP=minor "$PROJECT_ROOT/scripts/compute-next-version.sh"
-  [ "$status" -eq 0 ]
-  [ "$output" = "v2.1.0" ]
-}
-
-@test "major bump from 2-part legacy v2.0 produces v3.0.0" {
-  for t in v1.0 v1.1 v2.0; do git tag "$t"; done
-  run env BUMP=major "$PROJECT_ROOT/scripts/compute-next-version.sh"
-  [ "$status" -eq 0 ]
-  [ "$output" = "v3.0.0" ]
-}
-
-@test "version sort picks the highest across mixed 2-part and 3-part tags" {
-  for t in v1.0 v1.5 v1.2 v1.10 v1.10.5; do git tag "$t"; done
+@test "version sort picks the highest tag, not the lex-greatest" {
+  for t in v1.0.0 v1.5.0 v1.2.0 v1.10.0 v1.10.5; do git tag "$t"; done
   run env BUMP=minor "$PROJECT_ROOT/scripts/compute-next-version.sh"
   [ "$status" -eq 0 ]
   [ "$output" = "v1.11.0" ]
+}
+
+@test "floating major tags (e.g. v2) are excluded from the scan" {
+  for t in v1.0.0 v2.0.0 v2; do git tag "$t"; done
+  run env BUMP=patch "$PROJECT_ROOT/scripts/compute-next-version.sh"
+  [ "$status" -eq 0 ]
+  [ "$output" = "v2.0.1" ]
+}
+
+@test "no tags falls back to v0.x.0 baseline" {
+  run env BUMP=minor "$PROJECT_ROOT/scripts/compute-next-version.sh"
+  [ "$status" -eq 0 ]
+  [ "$output" = "v0.1.0" ]
+}
+
+@test "invalid BUMP value is rejected" {
+  run env BUMP=banana "$PROJECT_ROOT/scripts/compute-next-version.sh"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"BUMP must be"* ]]
 }
