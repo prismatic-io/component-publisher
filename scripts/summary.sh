@@ -13,16 +13,19 @@ skip_row() {
   fi
 }
 
+component_label="${COMPONENT_PATH:-.}"
+
 if [[ "${PUBLISH_SKIPPED:-false}" == "true" ]]; then
   {
-    echo "### Component Not Published 🚫"
-    echo "#### A component with this signature is already published."
+    echo "### Component Skipped :fast_forward:"
+    echo "#### \`$component_label\` is already up to date — signature matched the latest published version."
   } >> "$GITHUB_STEP_SUMMARY"
   exit 0
 fi
 
 {
   echo "### Component Published :rocket:"
+  echo "#### \`$component_label\`"
   echo "|![Prismatic Logo](https://app.prismatic.io/logo_fullcolor_white.svg)| Publish Info |"
   echo "| --------------------- | --------------- |"
 
